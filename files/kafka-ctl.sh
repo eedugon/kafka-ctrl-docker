@@ -81,7 +81,7 @@ consume() {
     shift
   done
 
-  kafka-console-consumer.sh --topic "$name" "$from_beginning" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+  kafka-console-consumer.sh --topic "$name" "$from_beginning" --bootstrap-server "${KAFKA_BROKER_LIST}"
 }
 
 produce() {
