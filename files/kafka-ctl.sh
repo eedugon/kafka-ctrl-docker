@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Common configuration
@@ -20,14 +20,17 @@ use() {
     echo "      REPLICATION_FACTOR : replication factor used. Default 1"
     echo "      REPLICATION_FACTOR : number of partitions. Default 1"
     echo "  consume : consume and show data from a topic"
-    echo "    options : NAME [--no-from-beginning]"
+    echo "    options : NAME [--no-from-beginning] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
     echo "      NAME : name of the topic to consume data"
     echo "      --no-from-beginning : if it is no present (default) data will "
     echo "        be consumed from the beginning of the topic. only new data in "
     echo "        other case"
+    echo "      --property PROPx=VALUEx : set property PROPx with value VALUEx in consumer "
     echo "  produce : produce data (readed from stdin) and put in a topic"
-    echo "    options : NAME"
+    echo "    options : NAME [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
     echo "      NAME : name of the topic to consume data"
+    echo "      --property PROPx=VALUEx : set property PROPx with value VALUEx in producer "
+
 }
 
 list_topics() {
@@ -71,22 +74,27 @@ consume() {
   local from_beginning="--from-beginning"
   local name="$1"
   shift
+  local otherOptions=()
   while [ ! -z "$1" ]
   do
     case $1 in
       --no-from-beginning)
         from_beginning=""
         ;;
+      *)
+        otherOptions+=" $1"
+        ;;
     esac
     shift
   done
 
-  kafka-console-consumer.sh --topic "$name" "$from_beginning" --bootstrap-server "${KAFKA_BROKER_LIST}"
+  kafka-console-consumer.sh ${otherOptions[@]} --topic "$name" "$from_beginning" --bootstrap-server "${KAFKA_BROKER_LIST}"
 }
 
 produce() {
   local name="$1"
-  kafka-console-producer.sh --topic "$name" --broker-list "${KAFKA_BROKER_LIST}"
+  shift
+  kafka-console-producer.sh $@ --topic "$name" --broker-list "${KAFKA_BROKER_LIST}"
 }
 
 case $1 in
