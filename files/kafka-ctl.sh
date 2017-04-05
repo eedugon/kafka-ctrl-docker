@@ -26,9 +26,10 @@ use() {
     echo "        be consumed from the beginning of the topic. only new data in "
     echo "        other case"
     echo "      --property PROPx=VALUEx : set property PROPx with value VALUEx in consumer "
-    echo "  produce : produce data (readed from stdin) and put in a topic"
-    echo "    options : NAME [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
+    echo "  produce : produce data (readed from file or stdin) and put in a topic"
+    echo "    options : NAME [--file|-f filepath] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
     echo "      NAME : name of the topic to consume data"
+    echo "      --file|-f filepath file to use as data input, if it is not defined data will be read from stdin"
     echo "      --property PROPx=VALUEx : set property PROPx with value VALUEx in producer "
 
 }
@@ -94,7 +95,21 @@ consume() {
 produce() {
   local name="$1"
   shift
-  kafka-console-producer.sh $@ --topic "$name" --broker-list "${KAFKA_BROKER_LIST}"
+  ## Empty file is standar input
+  local inputFile=""
+  case "$1" in
+    --file|-f)
+        if [ -z "$2" ]
+        then
+          echo "produce with --file|-f option without value"
+          use
+          exit 1
+        fi
+        inputFile="$2"
+        shift 2
+      ;;
+  esac
+  cat $inputFile | kafka-console-producer.sh $@ --topic "$name" --broker-list "${KAFKA_BROKER_LIST}"
 }
 
 case $1 in
