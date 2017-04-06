@@ -38,3 +38,7 @@ docker-compose run --rm kafka-ctl produce testtopic
 ```
 
 Data to push in topic is reading from `stdin`
+
+## Cleaning procedure ##
+
+**TODO**
