@@ -15,8 +15,9 @@ use() {
     echo "    options : NAME"
     echo "      NAME : the name of topic"
     echo "  create-topic : create a topic"
-    echo "    options : NAME [-r REPLICATION_FACTOR ] [-p PARTITIONS]"
+    echo "    options : NAME [-s] [-r REPLICATION_FACTOR ] [-p PARTITIONS]"
     echo "      NAME : the name of the topic to create"
+    echo "      -s : If active (present) only create topic if not exists"
     echo "      REPLICATION_FACTOR : replication factor used. Default 1"
     echo "      REPLICATION_FACTOR : number of partitions. Default 1"
     echo "  consume : consume and show data from a topic"
@@ -49,6 +50,7 @@ describe_topic() {
 }
 
 create_topic() {
+  local safe="no"
   local repl_fct=1
   local partitions=1
   local name="$1"
@@ -64,11 +66,24 @@ create_topic() {
         shift 1
         partitions=$1
         ;;
+      -s)
+        safe="yes"
+        ;;
     esac
     shift
   done
 
-  kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+  if [ "$safe" == "yes" ]
+  then
+    if kafka-topics.sh --describe --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}" 2>&1 | fgrep "$name" > /dev/null
+    then
+      echo "Topic $name exists. Ignoring"
+    else
+       kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+    fi
+  else
+    kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+  fi
 }
 
 consume() {
