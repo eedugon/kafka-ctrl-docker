@@ -8,18 +8,22 @@ KAFKA_BROKER_LIST="${KAFKA_BROKER_LIST:-kafka:9092}"
 use() {
     echo "kafka-ctl list-topics|remove-topic|create-topic [options]"
     echo "  list-topics : list all topics"
-    echo "  delete-topic : delete a topic"
-    echo "    options : NAME"
-    echo "      NAME : the name of topic to remove"
-    echo "  describe-topic : give info of a topic"
-    echo "    options : NAME"
-    echo "      NAME : the name of topic"
-    echo "  create-topic : create a topic"
-    echo "    options : NAME [-s] [-r REPLICATION_FACTOR ] [-p PARTITIONS]"
-    echo "      NAME : the name of the topic to create"
-    echo "      -s : If active (present) only create topic if not exists"
-    echo "      REPLICATION_FACTOR : replication factor used. Default 1"
-    echo "      REPLICATION_FACTOR : number of partitions. Default 1"
+    echo "  delete-topic : delete a on more topic"
+    echo "    options : NAME0 ... NAMEn"
+    echo "      NAMEx : the name of topic to remove"
+    echo "  describe-topic : give info of one or more topics"
+    echo "    options : NAME0 ... NAMEn"
+    echo "      NAMEx : the name of topic"
+    echo "  create-topic : create one or more topics"
+    echo "    options : [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] NAMEn"
+    echo "      NAMEx : the name of the topic to create"
+    echo "      -s : If active (present) only create topic if not exists (-ns inverse)"
+    echo "      REPLICATION_FACTORx : replication factor used. Default 1"
+    echo "      PARTITIONS0x : number of partitions. Default 1"
+    echo ""
+    echo "      -s REplication_ and PARTITIONS are remembered if you set they apply to next topics until you set it "
+    echo "      Example create-topic -s -r 1 -p 2 topic1 topic2 is the same like"
+    echo "      create-topic -s -r 1 -p 2 topic1 -s -r 1 -p 2 topic2"
     echo "  consume : consume and show data from a topic"
     echo "    options : NAME [--no-from-beginning] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
     echo "      NAME : name of the topic to consume data"
@@ -39,23 +43,32 @@ list_topics() {
   kafka-topics.sh --list --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
 }
 
-delete_topic() {
-  local name="$1"
-  kafka-topics.sh --delete --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+delete_topics() {
+  local name=""
+  while [ -n "$1" ]
+  do
+    name="$1"
+    kafka-topics.sh --delete --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+    shift
+  done
 }
 
 describe_topic() {
-  local name="$1"
-  kafka-topics.sh --describe --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+  local name=""
+  while [ -n "$1" ]
+  do
+    name="$1"
+    kafka-topics.sh --describe --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+    shift
+  done
 }
 
-create_topic() {
+create_topics() {
   local safe="no"
   local repl_fct=1
   local partitions=1
-  local name="$1"
-  shift
-  while [ ! -z "$1" ]
+  local name=""
+  while [ -n "$1" ]
   do
     case $1 in
       -r)
@@ -69,21 +82,26 @@ create_topic() {
       -s)
         safe="yes"
         ;;
+      -ns)
+        safe="no"
+        ;;
+      *)
+        name="$1"
+        if [ "$safe" == "yes" ]
+        then
+          if kafka-topics.sh --describe --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}" 2>&1 | fgrep "$name" > /dev/null
+          then
+            echo "Topic $name exists. Ignoring"
+          else
+             kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+          fi
+        else
+          kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+        fi
+        ;;
     esac
     shift
   done
-
-  if [ "$safe" == "yes" ]
-  then
-    if kafka-topics.sh --describe --topic "$name" --zookeeper "${ZOOKEEPER_ENTRY_POINT}" 2>&1 | fgrep "$name" > /dev/null
-    then
-      echo "Topic $name exists. Ignoring"
-    else
-       kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
-    fi
-  else
-    kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
-  fi
 }
 
 consume() {
@@ -133,11 +151,11 @@ case $1 in
     ;;
   create-topic)
     shift
-    create_topic $@
+    create_topics $@
     ;;
   delete-topic)
     shift
-    delete_topic $@
+    delete_topics $@
     ;;
   describe-topic)
     shift
