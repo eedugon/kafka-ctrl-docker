@@ -5,37 +5,41 @@ set -e
 ZOOKEEPER_ENTRY_POINT="${ZOOKEEPER_ENTRY_POINT:-zookeeper:2181}"
 KAFKA_BROKER_LIST="${KAFKA_BROKER_LIST:-kafka:9092}"
 
-use() {
-    echo "kafka-ctl list-topics|remove-topic|create-topic [options]"
-    echo "  list-topics : list all topics"
-    echo "  delete-topic : delete a on more topic"
-    echo "    options : NAME0 ... NAMEn"
-    echo "      NAMEx : the name of topic to remove"
-    echo "  describe-topic : give info of one or more topics"
-    echo "    options : NAME0 ... NAMEn"
-    echo "      NAMEx : the name of topic"
-    echo "  create-topic : create one or more topics"
-    echo "    options : [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] NAMEn"
-    echo "      NAMEx : the name of the topic to create"
-    echo "      -s : If active (present) only create topic if not exists (-ns inverse)"
-    echo "      REPLICATION_FACTORx : replication factor used. Default 1"
-    echo "      PARTITIONS0x : number of partitions. Default 1"
-    echo ""
-    echo "      -s REplication_ and PARTITIONS are remembered if you set they apply to next topics until you set it "
-    echo "      Example create-topic -s -r 1 -p 2 topic1 topic2 is the same like"
-    echo "      create-topic -s -r 1 -p 2 topic1 -s -r 1 -p 2 topic2"
-    echo "  consume : consume and show data from a topic"
-    echo "    options : NAME [--no-from-beginning] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
-    echo "      NAME : name of the topic to consume data"
-    echo "      --no-from-beginning : if it is no present (default) data will "
-    echo "        be consumed from the beginning of the topic. only new data in "
-    echo "        other case"
-    echo "      --property PROPx=VALUEx : set property PROPx with value VALUEx in consumer "
-    echo "  produce : produce data (readed from file or stdin) and put in a topic"
-    echo "    options : NAME [--file|-f filepath] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]"
-    echo "      NAME : name of the topic to consume data"
-    echo "      --file|-f filepath file to use as data input, if it is not defined data will be read from stdin"
-    echo "      --property PROPx=VALUEx : set property PROPx with value VALUEx in producer "
+usage() {
+  cat <<EOF
+kafka-ctl COMMAND [options]
+
+ Were COMMAND is one of:
+  list-topics : list all topics
+  delete-topic : delete a on more topic
+    options : NAME0 ... NAMEn
+      NAMEx : the name of topic to remove
+  describe-topic : give info of one or more topics
+    options : NAME0 ... NAMEn
+      NAMEx : the name of topic
+  create-topic : create one or more topics
+    options : [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] NAMEn
+      NAMEx : the name of the topic to create
+      -s : If active (present) only create topic if not exists (-ns inverse)
+      REPLICATION_FACTORx : replication factor used. Default 1
+      PARTITIONS0x : number of partitions. Default 1
+
+      -s REplication_ and PARTITIONS are remembered if you set they apply to next topics until you set it
+      Example create-topic -s -r 1 -p 2 topic1 topic2 is the same like
+      create-topic -s -r 1 -p 2 topic1 -s -r 1 -p 2 topic2
+  consume : consume and show data from a topic
+    options : NAME [--no-from-beginning] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]
+      NAME : name of the topic to consume data
+      --no-from-beginning : if it is no present (default) data will
+        be consumed from the beginning of the topic. only new data in
+        other case
+      --property PROPx=VALUEx : set property PROPx with value VALUEx in consumer
+  produce : produce data (readed from file or stdin) and put in a topic
+    options : NAME [--file|-f filepath] [--property PROP1=VALUE1 ... --property PROPn=VALUEn]
+      NAME : name of the topic to consume data
+      --file|-f filepath file to use as data input, if it is not defined data will be read from stdin
+      --property PROPx=VALUEx : set property PROPx with value VALUEx in producer
+EOF
 
 }
 
@@ -135,7 +139,7 @@ produce() {
         if [ -z "$2" ]
         then
           echo "produce with --file|-f option without value"
-          use
+          usage
           exit 1
         fi
         inputFile="$2"
@@ -170,7 +174,7 @@ case $1 in
     produce $@
     ;;
   *)
-    use
+    usage
     exit 1
     ;;
 esac
