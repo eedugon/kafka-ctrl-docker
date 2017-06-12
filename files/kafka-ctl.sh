@@ -18,11 +18,26 @@ kafka-ctl COMMAND [options]
     options : NAME0 ... NAMEn
       NAMEx : the name of topic
   create-topic : create one or more topics
-    options : [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] NAMEn
+    options : [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] [-nc] [-c CONFIG0_1 ... -c CONFIG0_n] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] [-nc] [-c CONFIGn_1 ... -c CONFIGn_n] NAMEn
       NAMEx : the name of the topic to create
       -s : If active (present) only create topic if not exists (-ns inverse)
       REPLICATION_FACTORx : replication factor used. Default 1
       PARTITIONS0x : number of partitions. Default 1
+
+      -c Override default configuration values for all topics (See kafka-config.sh for more information).
+         Values are set for current topic and next. If you need reset overrided configuration values use -nc
+
+         For example create-topic -c prop1=value1 prop2=value2 topic1 -c prop3=value3 topic2
+         is the same like:
+         create-topic -c prop1=value1 prop2=value2 topic1 -nc -c prop1=value1 prop2=value2 prop3=value3 topic2
+
+         In both cases prop1=value1 and prop2=value2 is applied when create topic1 and topic2, but prop3=value3 is
+         applied only when create topic2
+
+         In next case reate-topic -c prop1=value1 prop2=value2 topic1 -c prop3=value3 topic2 -nc topic3
+         topic3 has not any configuration value override from default (defined at kafka server level)
+
+      -nc Remove all CONIFx_x defined to this time
 
       -s REplication_ and PARTITIONS are remembered if you set they apply to next topics until you set it
       Example create-topic -s -r 1 -p 2 topic1 topic2 is the same like
@@ -72,6 +87,7 @@ create_topics() {
   local repl_fct=1
   local partitions=1
   local name=""
+  local configs=""
   while [ -n "$1" ]
   do
     case $1 in
@@ -82,6 +98,14 @@ create_topics() {
       -p)
         shift 1
         partitions=$1
+        ;;
+      -c)
+        shift 1
+        configs="$configs --config $1"
+        ;;
+      -nc)
+        shift 1
+        configs=""
         ;;
       -s)
         safe="yes"
@@ -97,10 +121,10 @@ create_topics() {
           then
             echo "Topic $name exists. Ignoring"
           else
-             kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+            kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" $configs --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
           fi
         else
-          kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+          kafka-topics.sh --create --topic "$name" --replication-factor "$repl_fct" --partitions "${partitions}" $configs --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
         fi
         ;;
     esac
