@@ -4,6 +4,9 @@ set -e
 # Common configuration
 ZOOKEEPER_ENTRY_POINT="${ZOOKEEPER_ENTRY_POINT:-zookeeper:2181}"
 KAFKA_BROKER_LIST="${KAFKA_BROKER_LIST:-kafka:9092}"
+# Only for get listed here.
+WAIT_FOR_SERVICE_UP="${WAIT_FOR_SERVICE_UP}"
+WAIT_FOR_SERVICE_UP_TIMEOUT="${WAIT_FOR_SERVICE_UP_TIMEOUT:-10s}"
 
 usage() {
   cat <<EOF
@@ -54,6 +57,31 @@ kafka-ctl COMMAND [options]
       NAME : name of the topic to consume data
       --file|-f filepath file to use as data input, if it is not defined data will be read from stdin
       --property PROPx=VALUEx : set property PROPx with value VALUEx in producer
+
+  ENVIRONMENT CONFIGURATION.
+    There are some configuration and behaviours that can be set using next Environment
+    Variables:
+
+      ZOOKEEPER_ENTRY_POINT. Define zookeeper entry point. By default: zookeeper:2181
+
+      KAFKA_BROKER_LIST. Define kafka bootstrap server entry points. By default:
+        kafka:9092
+
+      WAIT_FOR_SERVICE_UP. If it is defined we wait (using dockerize) for service(s)
+        to be started before to perform any operation. Example values:
+
+        WAIT_FOR_SERVICE_UP="tcp://kafka:9092" wait for tcp connection to kafka:9092
+        are available
+
+        WAIT_FOR_SERVICE_UP="tcp://kafka:9092 tcp://zookeeper:2181" Wait for
+        kafka:9092 and zookeeper:2818 connections are avilable.
+
+        If one of this can not be process will exit with error will be. See
+        https://github.com/jwilder/dockerize for more information.
+
+      WAIT_FOR_SERVICE_UP_TIMEOUT. Set timeot when check services listed on
+        WAIT_FOR_SERVICE_UP. Default value 10s
+
 EOF
 
 }
@@ -172,6 +200,20 @@ produce() {
   esac
   cat $inputFile | kafka-console-producer.sh $@ --topic "$name" --broker-list "${KAFKA_BROKER_LIST}"
 }
+
+wait_for_service_up(){
+    if [ -n "$WAIT_FOR_SERVICE_UP" ]; then
+      local services=""
+      #Set -wait option to use with docerize
+      for service in $WAIT_FOR_SERVICE_UP; do
+        services="$services -wait $service"
+      done
+      echo "Waiting till services $WAIT_FOR_SERVICE_UP are accessible (or timeout: $WAIT_FOR_SERVICE_UP_TIMEOUT)"
+      dockerize $services -timeout "$WAIT_FOR_SERVICE_UP_TIMEOUT"
+    fi
+}
+
+wait_for_service_up
 
 case $1 in
   list-topics)

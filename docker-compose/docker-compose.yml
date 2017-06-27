@@ -3,6 +3,8 @@ version: '2.1'
 services:
   kafka-ctl:
     build: ..
+    environment:
+      WAIT_FOR_SERVICE_UP: "tcp://kafka:9092 tcp://zookeeper:2181"
     depends_on:
       kafka:
         condition: service_started
