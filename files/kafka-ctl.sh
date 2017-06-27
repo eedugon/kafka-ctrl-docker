@@ -208,7 +208,7 @@ wait_for_service_up(){
       for service in $WAIT_FOR_SERVICE_UP; do
         services="$services -wait $service"
       done
-      echo "Waiting till services $WAIT_FOR_SERVICE_UP is running (or timeout: $WAIT_FOR_SERVICE_UP_TIMEOUT)"
+      echo "Waiting till services $WAIT_FOR_SERVICE_UP are accessible (or timeout: $WAIT_FOR_SERVICE_UP_TIMEOUT)"
       dockerize $services -timeout "$WAIT_FOR_SERVICE_UP_TIMEOUT"
     fi
 }
