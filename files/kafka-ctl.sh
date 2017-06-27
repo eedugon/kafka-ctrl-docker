@@ -54,6 +54,16 @@ kafka-ctl COMMAND [options]
       NAME : name of the topic to consume data
       --file|-f filepath file to use as data input, if it is not defined data will be read from stdin
       --property PROPx=VALUEx : set property PROPx with value VALUEx in producer
+
+  ENVIRONMENT CONFIGURATION.
+    There are some configuration and behaviours that can be set using next Environment
+    Variables:
+
+      ZOOKEEPER_ENTRY_POINT. Define zookeeper entry point. By default: zookeeper:2181
+
+      KAFKA_BROKER_LIST. Define kafka bootstrap server entry points. By default:
+      kafka:9092
+
 EOF
 
 }
