@@ -65,7 +65,22 @@ kafka-ctl COMMAND [options]
       ZOOKEEPER_ENTRY_POINT. Define zookeeper entry point. By default: zookeeper:2181
 
       KAFKA_BROKER_LIST. Define kafka bootstrap server entry points. By default:
-      kafka:9092
+        kafka:9092
+
+      WAIT_FOR_SERVICE_UP. If it is defined we wait (using dockerize) for service(s)
+        to be started before to perform any operation. Example values:
+
+        WAIT_FOR_SERVICE_UP="tcp://kafka:9092" wait for tcp connection to kafka:9092
+        are available
+
+        WAIT_FOR_SERVICE_UP="tcp://kafka:9092 tcp://zookeeper:2181" Wait for
+        kafka:9092 and zookeeper:2818 connections are avilable.
+
+        If one of this can not be process will exit with error will be. See
+        https://github.com/jwilder/dockerize for more information.
+
+      WAIT_FOR_SERVICE_UP_TIMEOUT. Set timeot when check services listed on
+        WAIT_FOR_SERVICE_UP. Default value 10s
 
 EOF
 
