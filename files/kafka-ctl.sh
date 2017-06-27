@@ -4,6 +4,9 @@ set -e
 # Common configuration
 ZOOKEEPER_ENTRY_POINT="${ZOOKEEPER_ENTRY_POINT:-zookeeper:2181}"
 KAFKA_BROKER_LIST="${KAFKA_BROKER_LIST:-kafka:9092}"
+# Only for get listed here.
+WAIT_FOR_SERVICE_UP="${WAIT_FOR_SERVICE_UP}"
+WAIT_FOR_SERVICE_UP_TIMEOUT="${WAIT_FOR_SERVICE_UP_TIMEOUT:-10s}"
 
 usage() {
   cat <<EOF
@@ -182,6 +185,20 @@ produce() {
   esac
   cat $inputFile | kafka-console-producer.sh $@ --topic "$name" --broker-list "${KAFKA_BROKER_LIST}"
 }
+
+wait_for_service_up(){
+    if [ -n "$WAIT_FOR_SERVICE_UP" ]; then
+      local services=""
+      #Set -wait option to use with docerize
+      for service in $WAIT_FOR_SERVICE_UP; do
+        services="$services -wait $service"
+      done
+      echo "Waiting till services $WAIT_FOR_SERVICE_UP is running (or timeout: $WAIT_FOR_SERVICE_UP_TIMEOUT)"
+      dockerize $services -timeout "$WAIT_FOR_SERVICE_UP_TIMEOUT"
+    fi
+}
+
+wait_for_service_up
 
 case $1 in
   list-topics)
