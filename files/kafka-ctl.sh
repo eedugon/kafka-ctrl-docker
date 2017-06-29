@@ -7,6 +7,7 @@ KAFKA_BROKER_LIST="${KAFKA_BROKER_LIST:-kafka:9092}"
 # Only for get listed here.
 WAIT_FOR_SERVICE_UP="${WAIT_FOR_SERVICE_UP}"
 WAIT_FOR_SERVICE_UP_TIMEOUT="${WAIT_FOR_SERVICE_UP_TIMEOUT:-10s}"
+WAIT_FOR_TOPICS_TIMEOUT="${WAIT_FOR_TOPICS_TIMEOUT:-10}"
 
 usage() {
   cat <<EOF
@@ -14,6 +15,10 @@ kafka-ctl COMMAND [options]
 
  Were COMMAND is one of:
   list-topics : list all topics
+  wait-for-topics: Wait for topics exist, or timeout.
+    options: [ --time-out SECONDS] NAME0 ... NAMEn
+      SECONDS: Number of seconds to wait after exist with tiemout error
+      NAMEx: Topics that should exists (all) until exit.
   delete-topic : delete a on more topic
     options : NAME0 ... NAMEn
       NAMEx : the name of topic to remove
@@ -88,6 +93,41 @@ EOF
 
 list_topics() {
   kafka-topics.sh --list --zookeeper "${ZOOKEEPER_ENTRY_POINT}"
+}
+
+wait_for_topics(){
+  local timeout=${WAIT_FOR_TOPICS_TIMEOUT}
+  if [ "$1" == "--timeout" ]; then
+    if [ -z "$2" ]; then
+      echo "Error. --timeout option without value in wait for topics function"
+      usage
+      exit 1
+    fi
+    local timeout=$2
+    shift 2
+  fi
+  echo "Waiting for topics $@ (timeout $timeout)"
+  local iteration=0
+  while [ $iteration -lt $timeout ]; do
+    echo -n "."
+    local topics=$(list_topics | awk '{print $1}')
+    local found=0
+    for topic in $@; do
+      if echo "$topics" | fgrep "$topic" 2>&1 > /dev/null; then
+        found=$((found + 1))
+      fi
+    done
+
+    if [ $found -eq $# ]; then
+      echo "Topics $@ found"
+      exit 0
+    fi
+    iteration=$((iteration + 1))
+    sleep 1
+  done
+
+  echo "Any topic of $@ did not find. Timeout of $timeout seconds reached".
+  exit 1
 }
 
 delete_topics() {
@@ -218,6 +258,10 @@ wait_for_service_up
 case $1 in
   list-topics)
     list_topics
+    ;;
+  wait-for-topics)
+    shift
+    wait_for_topics $@
     ;;
   create-topic)
     shift
