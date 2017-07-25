@@ -14,6 +14,10 @@ usage() {
 kafka-ctl COMMAND [options]
 
  Were COMMAND is one of:
+  list-brokers: List brokers handled by zookeeper
+    options: [ --format | -n ]
+      --format: Pretty print output json
+      -n: count the number of brokers instead of list it
   list-topics : list all topics
   wait-for-topics: Wait for topics exist, or timeout.
     options: [ --time-out SECONDS] NAME0 ... NAMEn
@@ -89,6 +93,23 @@ kafka-ctl COMMAND [options]
 
 EOF
 
+}
+
+list_brokers() {
+  local jqPattern=""
+  if [ "$1" == "-n" ]; then
+    jqPattern=". | length"
+  elif [ "$1" == "--format" ]; then
+    jqPattern="."
+  fi
+
+  local brokers=$(zookeeper-shell.sh zookeeper:2181 <<< "ls /brokers/ids" | tail -1)
+
+  if [ -z "$jqPattern" ]; then
+    echo $brokers
+  else
+    echo "$brokers" | jq "$jqPattern"
+  fi
 }
 
 list_topics() {
@@ -256,6 +277,10 @@ wait_for_service_up(){
 wait_for_service_up
 
 case $1 in
+  list-brokers)
+    shift
+    list_brokers $@
+    ;;
   list-topics)
     list_topics
     ;;
