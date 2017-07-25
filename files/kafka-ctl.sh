@@ -106,7 +106,7 @@ list_brokers() {
     jqPattern="."
   fi
 
-  local brokers=$(zookeeper-shell.sh zookeeper:2181 <<< "ls /brokers/ids" | tail -1)
+  local brokers=$(zookeeper-shell.sh "${ZOOKEEPER_ENTRY_POINT}" <<< "ls /brokers/ids" | tail -1)
 
   if [ -z "$jqPattern" ]; then
     echo $brokers
