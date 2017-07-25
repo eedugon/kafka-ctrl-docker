@@ -30,11 +30,14 @@ kafka-ctl COMMAND [options]
     options : NAME0 ... NAMEn
       NAMEx : the name of topic
   create-topic : create one or more topics
-    options : [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] [-nc] [-c CONFIG0_1 ... -c CONFIG0_n] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] [-nc] [-c CONFIGn_1 ... -c CONFIGn_n] NAMEn
+    options : [--min-num-brokers-up NUM_BROKERS] [-s|-ns] [-r REPLICATION_FACTOR0 ] [-p PARTITIONS0] [-nc] [-c CONFIG0_1 ... -c CONFIG0_n] NAME0 ... [-s] [-r REPLICATION_FACTORn ] [-p PARTITIONSn] [-nc] [-c CONFIGn_1 ... -c CONFIGn_n] NAMEn
+      --min-num-brokers-up. If present create topics will be launched only if
+        number of kafka brokers is greather or equal that NUM_BROKERS.
+        See list-brokers -n for more information
       NAMEx : the name of the topic to create
       -s : If active (present) only create topic if not exists (-ns inverse)
       REPLICATION_FACTORx : replication factor used. Default 1
-      PARTITIONS0x : number of partitions. Default 1
+      PARTITIONSx : number of partitions. Default 1
 
       -c Override default configuration values for all topics (See kafka-config.sh for more information).
          Values are set for current topic and next. If you need reset overrided configuration values use -nc
@@ -51,7 +54,7 @@ kafka-ctl COMMAND [options]
 
       -nc Remove all CONIFx_x defined to this time
 
-      -s REplication_ and PARTITIONS are remembered if you set they apply to next topics until you set it
+      -s option, REPLICATION_FACTOR and PARTITIONS are remembered if you set they apply to next topics until you set it
       Example create-topic -s -r 1 -p 2 topic1 topic2 is the same like
       create-topic -s -r 1 -p 2 topic1 -s -r 1 -p 2 topic2
   consume : consume and show data from a topic
@@ -172,6 +175,23 @@ describe_topic() {
 }
 
 create_topics() {
+  # Checks for min number of kafka brokers if enabled
+  if [ "$1" == "--min-num-brokers-up" ]; then
+    if [ -z "$2" ]; then
+      echo "create-topic with --min-num-brokers-up option without value"
+      usage
+      exit 1
+    fi
+
+    local desired="$2"
+    local existingBrokers=$(list_brokers -n)
+    if [ "$existingBrokers" -lt "$desired" ]; then
+      echo "ERROR: create-topic with --min-num-brokers-up (kafka brokers) set to $desired, but only $existingBrokers brokers detected on zookeeper."
+      exit 1
+    fi
+    shift 2
+  fi
+
   local safe="no"
   local repl_fct=1
   local partitions=1
