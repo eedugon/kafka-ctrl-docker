@@ -185,6 +185,8 @@ create_topics() {
 
     local desired="$2"
     local existingBrokers=$(list_brokers -n)
+    # if previous function returned an empty value to existingBrokers we set it to 0
+    test -z "$existingBrokers" && existingBrokers="0"
     if [ "$existingBrokers" -lt "$desired" ]; then
       echo "ERROR: create-topic with --min-num-brokers-up (kafka brokers) set to $desired, but only $existingBrokers brokers detected on zookeeper."
       exit 1
